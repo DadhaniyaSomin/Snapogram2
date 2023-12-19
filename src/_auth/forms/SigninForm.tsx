@@ -1,8 +1,8 @@
-import React from 'react'
+import { Button } from "@/components/ui/button"
 
 const SigninForm = () => {
   return (
-    <div>SigninForm</div>
+<Button variant="destructive">Destructive</Button>
   )
 }
 
