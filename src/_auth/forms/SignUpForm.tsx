@@ -2,16 +2,25 @@ import { Button } from "@/components/ui/button"
 import * as z from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { SignUpValidation } from "@/lib/validation"
 import Loader from "@/components/shared/Loader"
 import { Link } from "react-router-dom"
+import { createUserAccount } from "@/lib/appwrite/api"
+import { useToast } from "@/components/ui/use-toast"
+import { useCreateUserAccountMutation, useSignInAccount } from "@/lib/react-queries/queriesAndMutations"
 
 
 const SignUpForm = () => {
+  const { toast } = useToast();
 
-  const isLoading = false;
+  const { mutateAsync : createuserAccount , isLoading: isCreatingUser} = useCreateUserAccountMutation();
+  console.log("useCreateUserAccountMutation return ", createuserAccount);
+
+  const { mutateAsync : signInAccount , isLoading : isSigningIn } = useSignInAccount();
+  console.log("useSignInAccount return ", signInAccount);
+
 
   // 1. Define your form.
   const form = useForm<z.infer<typeof SignUpValidation>>({
@@ -25,8 +34,23 @@ const SignUpForm = () => {
   })
 
   // 2. Define a submit handler.
-  function onSubmit(values: z.infer<typeof SignUpValidation>) {
-    // const newUser =  await createUserAccount
+  async function onSubmit(values: z.infer<typeof SignUpValidation>) {
+    const newUser = await createUserAccount(values);
+    if (!newUser) {
+      return  toast({ title : "Sign Up failed , Please try again "})
+    }
+
+    const session = await signInAccount({
+       email : values.email,
+       password : values.password
+    })
+
+    if(!session)
+    {
+      console.log("Session not found")
+      return toast({ title: "Sign Up failed , Please try again " })
+    }
+
   }
 
   return (
@@ -38,7 +62,7 @@ const SignUpForm = () => {
           Create new account
         </h2>
         <p className="text-light-3 small-medium md:base-regular mt-2">
-          To use Snapgram , Pleaseenter your details.
+          To use Snapgram , Please enter your details.
         </p>
 
         <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-5 w-full mt-4">
@@ -50,7 +74,7 @@ const SignUpForm = () => {
               <FormItem>
                 <FormLabel>Name</FormLabel>
                 <FormControl>
-                  <Input type="text" placeholder="Enter your name" {...field} />
+                  <Input type="text" className="shad-input" placeholder="Enter your name" {...field} />
                 </FormControl>
                 {/* <FormDescription>
                   This is your public display name.
@@ -68,7 +92,7 @@ const SignUpForm = () => {
               <FormItem>
                 <FormLabel>Username</FormLabel>
                 <FormControl>
-                  <Input type="text" placeholder="Enter your username" {...field} />
+                  <Input type="text" className="shad-input" placeholder="Enter your username" {...field} />
                 </FormControl>
                 {/* <FormDescription>
                   This is your public display name.
@@ -86,7 +110,7 @@ const SignUpForm = () => {
               <FormItem>
                 <FormLabel>Email</FormLabel>
                 <FormControl>
-                  <Input type="email" placeholder="Enter your email" {...field} />
+                  <Input type="email" className="shad-input" placeholder="Enter your email" {...field} />
                 </FormControl>
                 {/* <FormDescription>
                   This is your public display name.
@@ -104,7 +128,7 @@ const SignUpForm = () => {
               <FormItem>
                 <FormLabel>Password</FormLabel>
                 <FormControl>
-                  <Input type="password" placeholder="Enter your password" {...field} />
+                  <Input type="password" className="shad-input" placeholder="Enter your password" {...field} />
                 </FormControl>
                 {/* <FormDescription>
                   This is your public display name.
@@ -114,7 +138,7 @@ const SignUpForm = () => {
             )}
           />
           <Button type="submit" className="shad-button_primary">
-            {isLoading ? (
+            {isCreatingUser ? (
               <div className="flex-center gap-2">
                 <Loader />
               </div>
